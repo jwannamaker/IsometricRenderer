@@ -59,7 +59,7 @@ def isometric(x, y, z):
     return result
 
 
-def prep_render(vertices):
+def render_order(vertices):
     """ Orders each vertex by ascending z value
     Input: 2D np.array
     Returns list[x: int], list[y: int], list[z: int]
