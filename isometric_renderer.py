@@ -8,6 +8,7 @@ from tkinter import ttk
 from tkinter.ttk import Notebook
 from tkinter import colorchooser
 from tkinter import filedialog
+from tkinter import scrolledtext
 
 import numpy as np
 import matplotlib as mpl
@@ -53,9 +54,7 @@ def isometric(vertex):
                       [0, np.cos(beta), -np.sin(beta)],
                       [0, np.sin(beta), np.cos(beta)]])
 
-    result = np.matmul(np.matmul(rot_1, rot_2), vertex)
-    
-    return result
+    return np.matmul(np.matmul(rot_1, rot_2), vertex)
 
 
 def render_order(vertices):
@@ -106,24 +105,19 @@ class IsometricRenderer:
         self.shape_menu.add_command(label='Save', command=self.save_shape)
         
         
-        
-        # plt.style.use('dark_background')
-        # self.ax.axes.set_visible(False)
+        pyplot.style.use('dark_background')
         self.fig, self.ax = pyplot.subplots()
-        # self.fig.set_frameon(False)
-        # self.ax = self.fig.add_subplot(111)
         self.ax.set_axis_off()
-        
+        self.ax.set_aspect('equal')
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        
         self.widget = self.canvas.get_tk_widget()
-        self.widget.grid(row=0, column=0)
+        self.widget.grid(row=1, column=0, columnspan=2)
         
         render_button = ttk.Button(self.root, text='Render', command=self.render)
-        render_button.grid(row=0, column=3, sticky='N')
+        render_button.grid(row=0, column=0, sticky='EW', padx=25)
         
         permute_button = ttk.Button(self.root, text='Permute', command=self.permute)
-        permute_button.grid(row=0, column=2, sticky='N')
+        permute_button.grid(row=0, column=1, sticky='EW', padx=25)
     
     def render(self):
         # if self.color_file == '':
@@ -131,11 +125,14 @@ class IsometricRenderer:
         # if self.shape_file == '':
         #     return
         self.ax.clear()
-        self.ax.scatter(render_order(self.shape)[0], render_order(self.shape)[1])
+        self.ax.set_axis_off()
+        
+        points = render_order(self.shape)
+        self.ax.plot(points[0], points[1])
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.widget = self.canvas.get_tk_widget()
-        self.widget.grid(row=0, column=0)
+        self.widget.grid(row=1, column=0, columnspan=2)
         self.canvas.draw()
         
     def permute(self):
