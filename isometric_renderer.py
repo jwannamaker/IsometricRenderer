@@ -3,6 +3,7 @@ GUI app that takes a .json, opens with an integrated matplotlib, and displays an
 isometric render of that object in the .json
 """
 import json
+import itertools
 import tkinter as tk
 from tkinter import ttk
 from tkinter.ttk import Notebook
@@ -66,9 +67,11 @@ def render_order(vertices):
     sorted(vertices, key=lambda v: v[2])
     x_coords = vertices[:, 0]
     y_coords = vertices[:, 1]
-    # z_coords = render_order[:, 2]
-    return x_coords, y_coords #, z_coords
+    z_coords = vertices[:, 2]
+    return x_coords, y_coords, z_coords
 
+# def edges(vertices):
+#     return list(itertools.pairwise(vertices))
 
 class IsometricRenderer:
     def __init__(self, root):
@@ -104,35 +107,54 @@ class IsometricRenderer:
         self.shape_menu.add_command(label='Load', command=self.load_shape)
         self.shape_menu.add_command(label='Save', command=self.save_shape)
         
-        
         pyplot.style.use('dark_background')
         self.fig, self.ax = pyplot.subplots()
+        self.fig.set_figheight(2.56)
+        self.fig.set_figwidth(2.56)
         self.ax.set_axis_off()
         self.ax.set_aspect('equal')
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.widget = self.canvas.get_tk_widget()
-        self.widget.grid(row=1, column=0, columnspan=2)
+        self.widget.grid(row=2, column=0, columnspan=3)
         
         render_button = ttk.Button(self.root, text='Render', command=self.render)
         render_button.grid(row=0, column=0, sticky='EW', padx=25)
         
+        self.isometric_check = tk.BooleanVar()
+        isometric_button = ttk.Checkbutton(self.root, text='Isometric', variable=self.isometric_check,
+                                           onvalue=True, offvalue=False)
+        isometric_button.grid(row=1, column=0, sticky='EW', padx=25)
+        
+        self.fill_check = tk.BooleanVar()
+        fill_button = ttk.Checkbutton(self.root, text='Fill', variable=self.fill_check,
+                                      onvalue=True, offvalue=False)
+        fill_button.grid(row=1, column=1, sticky='EW', padx=25)
+        
         permute_button = ttk.Button(self.root, text='Permute', command=self.permute)
-        permute_button.grid(row=0, column=1, sticky='EW', padx=25)
+        permute_button.grid(row=0, column=2, sticky='EW', padx=25)
     
     def render(self):
-        # if self.color_file == '':
-        #     return
-        # if self.shape_file == '':
-        #     return
         self.ax.clear()
         self.ax.set_axis_off()
+        self.ax.set_aspect('equal')
         
         points = render_order(self.shape)
-        self.ax.plot(points[0], points[1])
+        iso_points = [isometric(v) for v in self.shape]
+        
+        if self.isometric_check.get():
+            self.ax.plot(iso_points[0], iso_points[1])
+            if self.fill_check.get():
+                self.ax.fill(iso_points[0], iso_points[1])
+        else:
+            self.ax.plot(points[0], points[1])
+        
+            if self.fill_check.get():
+                self.ax.fill(points[0], points[1])
+            
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.widget = self.canvas.get_tk_widget()
-        self.widget.grid(row=1, column=0, columnspan=2)
+        self.widget.grid(row=2, column=0, columnspan=3)
         self.canvas.draw()
         
     def permute(self):
