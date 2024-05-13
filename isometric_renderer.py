@@ -5,6 +5,7 @@ isometric render of that object in the .json
 import json
 import tkinter as tk
 from tkinter import ttk
+from tkinter.ttk import Notebook
 from tkinter import colorchooser
 from tkinter import filedialog
 
@@ -104,35 +105,37 @@ class IsometricRenderer:
         self.shape_menu.add_command(label='Load', command=self.load_shape)
         self.shape_menu.add_command(label='Save', command=self.save_shape)
         
+        
+        
         # plt.style.use('dark_background')
         # self.ax.axes.set_visible(False)
-        self.fig = pyplot.Figure(frameon=False, tight_layout=True)
-        self.ax = self.fig.add_subplot()
+        self.fig, self.ax = pyplot.subplots()
+        # self.fig.set_frameon(False)
+        # self.ax = self.fig.add_subplot(111)
         self.ax.set_axis_off()
         
-        # plot some dummy data here maybe
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.widget = self.canvas.get_tk_widget()\
-            .grid(row=0, column=0)
-        self.canvas.draw()
         
-        render_button = ttk.Button(self.root, text='Render', command=self.render)\
-            .grid(row=0, column=3, sticky='N')
+        self.widget = self.canvas.get_tk_widget()
+        self.widget.grid(row=0, column=0)
         
-        permute_button = ttk.Button(self.root, text='Permute', command=self.permute)\
-            .grid(row=0, column=2, sticky='N')
+        render_button = ttk.Button(self.root, text='Render', command=self.render)
+        render_button.grid(row=0, column=3, sticky='N')
+        
+        permute_button = ttk.Button(self.root, text='Permute', command=self.permute)
+        permute_button.grid(row=0, column=2, sticky='N')
     
     def render(self):
         # if self.color_file == '':
         #     return
         # if self.shape_file == '':
         #     return
-        self.fig.clear()
-        self.ax.plot(render_order(self.shape))
-        self.fig.show()
+        self.ax.clear()
+        self.ax.scatter(render_order(self.shape)[0], render_order(self.shape)[1])
+        
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.widget = self.canvas.get_tk_widget()\
-            .grid(row=0, column=0)
+        self.widget = self.canvas.get_tk_widget()
+        self.widget.grid(row=0, column=0)
         self.canvas.draw()
         
     def permute(self):
@@ -161,7 +164,8 @@ class IsometricRenderer:
     def load_shape(self):
         # self.shape_file = filedialog.askopenfilename(parent=self.root)
         self.shape = tetrahedron_pts
-        
+        for i, v in enumerate(self.shape):
+            print(f'Point {i}: [{v[0]}, {v[1]}, {v[2]}]')
     
     def save_shape(self):
         filedialog.asksaveasfile(parent=self.root, initialfile=self.get_filename(self.shape_file))
