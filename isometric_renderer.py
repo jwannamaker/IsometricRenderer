@@ -10,7 +10,8 @@ from tkinter import filedialog
 
 import numpy as np
 import matplotlib as mpl
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as pyplot
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # tetrahedron_x = [ np.sqrt(8/9), -np.sqrt(2/9), -np.sqrt(2/9), 0 ]
@@ -19,25 +20,22 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 # This is the format that I want vertex data to be in once loaded from .json
-tetrahedron_pts = np.array([[np.sprt(8/9), 0, -1/3],
+tetrahedron_pts = np.array([[np.sqrt(8/9), 0, -1/3],
                             [-np.sqrt(2/9), np.sqrt(2/3), -1/3],
                             [-np.sqrt(2/9), -np.sqrt(2/3), -1/3],
                             [0, 0, 1]])
 
-def isometric(x, y, z):
-    """ Takes 3D coordinate and returns the same coordinate after 
-        1. Rotation about the z-axis by 45˚ (ccw)
-        2. Rotation about the x-axis by 26.565˚ (ccw) -> backwards tilt
+def isometric(vertex):
+    """ 
+    Input: 1D np.array 
+    1. Rotation about the z-axis by 45˚ (ccw)
+    2. Rotation about the x-axis by 26.565˚ (ccw) -> backwards tilt
     
     Assuming start orientation is 
-            +y  ^
-                |
-                |  (0, 0, 0)
-                | /
-    -x <--------+--------> +x
-                |
-                |
-                |
+            +y  
+                
+    -x    (0, 0, 0)    +x
+                
             -y  
     """
     alpha = np.deg2rad(45)  # First rotation around z-axis.
@@ -54,7 +52,7 @@ def isometric(x, y, z):
                       [0, np.cos(beta), -np.sin(beta)],
                       [0, np.sin(beta), np.cos(beta)]])
 
-    result = np.matmul(np.matmul(rot_1, rot_2), np.array([x, y, z]))
+    result = np.matmul(np.matmul(rot_1, rot_2), vertex)
     
     return result
 
@@ -65,11 +63,11 @@ def render_order(vertices):
     Returns list[x: int], list[y: int], list[z: int]
     """
     # Note: sort() only works for lists, sorted() does everything else except it's In Place
-    render_order = vertices.sort(key=lambda v: v[2])  # sort by z value
-    x_coords = render_order[:, 0]
-    y_coords = render_order[:, 1]
-    z_coords = render_order[:, 2]
-    return x_coords, y_coords, z_coords
+    sorted(vertices, key=lambda v: v[2])
+    x_coords = vertices[:, 0]
+    y_coords = vertices[:, 1]
+    # z_coords = render_order[:, 2]
+    return x_coords, y_coords #, z_coords
 
 
 class IsometricRenderer:
@@ -96,7 +94,7 @@ class IsometricRenderer:
         self.color_menu.add_command(label='Save', command=self.save_colors)
         
         self.shape_file = ''
-        self.shape = {}
+        self.shape = tetrahedron_pts
         
         self.shape_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='Shape', menu=self.shape_menu)
@@ -107,14 +105,16 @@ class IsometricRenderer:
         self.shape_menu.add_command(label='Save', command=self.save_shape)
         
         # plt.style.use('dark_background')
-        plt.axis('off')
-        # self.color_ax.axes.set_visible(False)
-        self.color_fig, self.color_ax = plt.subplots(nrows=2, height_ratios=[1, 7])
-        self.color_fig.set_frameon(False)
+        # self.ax.axes.set_visible(False)
+        self.fig = pyplot.Figure(frameon=False, tight_layout=True)
+        self.ax = self.fig.add_subplot()
+        self.ax.set_axis_off()
         
-        self.color_canvas = FigureCanvasTkAgg(self.color_fig, master=self.root)
-        self.color_widget = self.color_canvas.get_tk_widget()\
+        # plot some dummy data here maybe
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.widget = self.canvas.get_tk_widget()\
             .grid(row=0, column=0)
+        self.canvas.draw()
         
         render_button = ttk.Button(self.root, text='Render', command=self.render)\
             .grid(row=0, column=3, sticky='N')
@@ -123,14 +123,17 @@ class IsometricRenderer:
             .grid(row=0, column=2, sticky='N')
     
     def render(self):
-        if self.color_file == '':
-            return
-        if self.shape_file == '':
-            return
-        self.color_fig.clear()
-        # some change here.
-        
-        self.color_canvas.draw()
+        # if self.color_file == '':
+        #     return
+        # if self.shape_file == '':
+        #     return
+        self.fig.clear()
+        self.ax.plot(render_order(self.shape))
+        self.fig.show()
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.widget = self.canvas.get_tk_widget()\
+            .grid(row=0, column=0)
+        self.canvas.draw()
         
     def permute(self):
         pass
@@ -156,7 +159,9 @@ class IsometricRenderer:
         filedialog.asksaveasfile(parent=self.root, initialfile=self.get_filename(self.color_file))
         
     def load_shape(self):
-        self.shape_file = filedialog.askopenfilename(parent=self.root)
+        # self.shape_file = filedialog.askopenfilename(parent=self.root)
+        self.shape = tetrahedron_pts
+        
     
     def save_shape(self):
         filedialog.asksaveasfile(parent=self.root, initialfile=self.get_filename(self.shape_file))
