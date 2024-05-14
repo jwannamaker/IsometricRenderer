@@ -42,7 +42,7 @@ def isometric(vertex):
             -y  
     """
     alpha = np.deg2rad(45)  # First rotation around z-axis.
-    beta = np.deg2rad(26.56505118)  # Second rotation around x-axis.
+    beta = np.deg2rad(-26.56505118)  # Second rotation around x-axis.
     
     xy_ratio = np.cos(alpha) / np.cos(beta) # Do I even need foreshortening at all??
     z_ratio = np.sin(alpha) / np.sin(beta)
@@ -64,7 +64,7 @@ def render_order(vertices):
     Returns list[x: int], list[y: int], list[z: int]
     """
     # Note: sort() only works for lists, sorted() does everything else except it's In Place
-    sorted(vertices, key=lambda v: v[2])
+    # sorted(vertices, key=lambda v: v[2])
     x_coords = vertices[:, 0]
     y_coords = vertices[:, 1]
     z_coords = vertices[:, 2]
@@ -98,6 +98,7 @@ class IsometricRenderer:
         
         self.shape_file = ''
         self.shape = tetrahedron_pts
+        self.edges = []
         
         self.shape_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='Shape', menu=self.shape_menu)
@@ -142,10 +143,12 @@ class IsometricRenderer:
         iso_points = [isometric(v) for v in self.shape]
         
         if self.isometric_check.get():
+            self.ax.scatter(iso_points[0], iso_points[1])
             self.ax.plot(iso_points[0], iso_points[1])
             if self.fill_check.get():
                 self.ax.fill(iso_points[0], iso_points[1])
         else:
+            self.ax.scatter(points[0], points[1])
             self.ax.plot(points[0], points[1])
         
             if self.fill_check.get():
@@ -158,7 +161,30 @@ class IsometricRenderer:
         self.canvas.draw()
         
     def permute(self):
-        pass
+        # self.shape = tetrahedron_pts
+        
+        self.ax.clear()
+        self.ax.set_axis_off()
+        self.ax.set_aspect('equal')
+        
+        edges = list(itertools.permutations(tetrahedron_pts, 3))
+        for edge in edges:
+            print(edge)
+            print()
+        
+        # x, y, _ = [[e[i] for i in e] for e in edges]
+        
+        for edge in edges:
+            for pt in edge:
+                self.ax.scatter(pt[0], pt[1])
+                self.ax.plot(pt[0], pt[1])
+            
+        
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.widget = self.canvas.get_tk_widget()
+        self.widget.grid(row=2, column=0, columnspan=3)
+        self.canvas.draw()
+        
     
     def get_filename(self, full_path):
         i = full_path.rfind('/') + 1
