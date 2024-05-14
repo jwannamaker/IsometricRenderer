@@ -14,7 +14,7 @@ from tkinter import scrolledtext
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as pyplot
-from matplotlib.figure import Figure
+from mpl_toolkits.mplot3d import axes3d
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # tetrahedron_x = [ np.sqrt(8/9), -np.sqrt(2/9), -np.sqrt(2/9), 0 ]
@@ -27,6 +27,12 @@ tetrahedron_pts = np.array([[np.sqrt(8/9), 0, -1/3],
                             [-np.sqrt(2/9), np.sqrt(2/3), -1/3],
                             [-np.sqrt(2/9), -np.sqrt(2/3), -1/3],
                             [0, 0, 1]])
+
+
+flat_square_pts = np.array([[0, 1, 1],
+                            [0, 0, 1],
+                            [1, 0, 1],
+                            [1, 1, 1]])
 
 def isometric(vertex):
     """ 
@@ -41,34 +47,31 @@ def isometric(vertex):
                 
             -y  
     """
-    alpha = np.deg2rad(45)  # First rotation around z-axis.
-    beta = np.deg2rad(-26.56505118)  # Second rotation around x-axis.
-    
-    xy_ratio = np.cos(alpha) / np.cos(beta) # Do I even need foreshortening at all??
-    z_ratio = np.sin(alpha) / np.sin(beta)
-    
-    rot_1 = np.array([[np.cos(alpha), -np.sin(alpha), 0],
-                      [np.sin(alpha), np.cos(alpha), 0],
+    vertex = z_axis_rotation(vertex, 45)
+    vertex = x_axis_rotation(vertex, 26.56)
+    return vertex
+
+def x_axis_rotation(vertex, angle_degrees):
+    theta = np.deg2rad(angle_degrees)
+    rot_x = np.array([[1, 0, 0],
+                      [0, np.cos(theta), -np.sin(theta)],
+                      [0, np.sin(theta), np.cos(theta)]])
+    return np.matmul(rot_x, vertex)
+
+def y_axis_rotation(vertex, angle_degrees):
+    theta = np.deg2rad(angle_degrees)
+    rot_y = np.array([[np.cos(theta), 0, -np.sin(theta)],
+                      [0, 1, 0],
+                      [np.sin(theta), 0, np.cos(theta)]])
+    return np.matmul(rot_y, vertex)
+
+def z_axis_rotation(vertex, angle_degrees):
+    theta = np.deg2rad(angle_degrees)
+    rot_z = np.array([[np.cos(theta), -np.sin(theta), 0],
+                      [np.sin(theta), np.cos(theta), 0],
                       [0, 0, 1]])
-    
-    rot_2 = np.array([[1, 0, 0],
-                      [0, np.cos(beta), -np.sin(beta)],
-                      [0, np.sin(beta), np.cos(beta)]])
+    return np.matmul(rot_z, vertex)
 
-    return np.matmul(np.matmul(rot_1, rot_2), vertex)
-
-
-def render_order(vertices):
-    """ Orders each vertex by ascending z value
-    Input: 2D np.array
-    Returns list[x: int], list[y: int], list[z: int]
-    """
-    # Note: sort() only works for lists, sorted() does everything else except it's In Place
-    # sorted(vertices, key=lambda v: v[2])
-    x_coords = vertices[:, 0]
-    y_coords = vertices[:, 1]
-    z_coords = vertices[:, 2]
-    return x_coords, y_coords, z_coords
 
 # def edges(vertices):
 #     return list(itertools.pairwise(vertices))
@@ -109,7 +112,7 @@ class IsometricRenderer:
         self.shape_menu.add_command(label='Save', command=self.save_shape)
         
         pyplot.style.use('dark_background')
-        self.fig, self.ax = pyplot.subplots()
+        self.fig, self.ax = pyplot.subplots(subplot_kw={'projection': '3d'})
         self.fig.set_figheight(2.56)
         self.fig.set_figwidth(2.56)
         self.ax.set_axis_off()
@@ -139,7 +142,7 @@ class IsometricRenderer:
         self.ax.set_axis_off()
         self.ax.set_aspect('equal')
         
-        points = render_order(self.shape)
+        x, y = [i[0] for i in self.shape], [i[1] for i in self.shape]
         iso_points = [isometric(v) for v in self.shape]
         
         if self.isometric_check.get():
@@ -148,11 +151,11 @@ class IsometricRenderer:
             if self.fill_check.get():
                 self.ax.fill(iso_points[0], iso_points[1])
         else:
-            self.ax.scatter(points[0], points[1])
-            self.ax.plot(points[0], points[1])
+            self.ax.scatter(x, y)
+            self.ax.plot(x, y)
         
             if self.fill_check.get():
-                self.ax.fill(points[0], points[1])
+                self.ax.fill(x, y)
             
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
