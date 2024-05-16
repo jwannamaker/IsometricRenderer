@@ -15,6 +15,9 @@ import matplotlib.pyplot as pyplot
 from mpl_toolkits.mplot3d import axes3d
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+sizes = [15*8]
+colors = ['white', 'red', 'green', 'blue', 'purple', 'orange', 'yellow', 'pink']
+
 """ 
 Assuming start orientation is 
         +y  
@@ -60,8 +63,7 @@ class IsometricRenderer:
         self.root = root
         root.title('Isometric Render Tool')
         paddings = {'padx': 5, 'pady': 5}
-        style = ttk.Style()
-        print(style.theme_names())
+        self.root.bind('<Return>', self.render, add=True)
         
         
         pyplot.style.use('dark_background')
@@ -86,76 +88,104 @@ class IsometricRenderer:
         render_button.grid(row=0, column=6, sticky='NEW', **paddings)
         
         
-        self.x_degrees_entry = tk.StringVar()
-        x_label = ttk.Entry(self.root, justify='center', textvariable=self.x_degrees_entry)
+        self.x_entry = tk.DoubleVar(value=0.0)
+        x_label = ttk.Entry(self.root, justify='center', textvariable=self.x_entry)
         x_label.grid(row=3, column=4, sticky='SEW', **paddings)
-        self.x_degrees = tk.DoubleVar()
-        x_slider = ttk.Scale(self.root, variable=self.x_degrees, length=450,
-                             from_=1, to=-1, orient='vertical',
-                             command=self.x_rotate)
-        x_slider.grid(row=1, rowspan=2, column=4, sticky='NS', **paddings)
-        self.x_rotate()
+        x_label.bind('<Return>', self.x_entry_change)
+        
+        self.x_degrees = tk.DoubleVar(value=0.0)
+        self.x_slider = tk.Scale(self.root, variable=self.x_degrees, width=15, length=300,
+                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=120,
+                                  command=self.x_slider_change)
+        self.x_slider.grid(row=1, column=4, sticky='NS', **paddings)
         
         
-        self.y_degrees_entry = tk.StringVar()
-        y_label = ttk.Entry(self.root, justify='center', textvariable=self.y_degrees_entry)
+        self.y_entry = tk.DoubleVar(value=0.0)
+        y_label = ttk.Entry(self.root, justify='center', textvariable=self.y_entry)
         y_label.grid(row=3, column=5, sticky='SEW', **paddings)
+        y_label.bind('<Return>', self.y_entry_change)
+        
         self.y_degrees = tk.DoubleVar()
-        y_slider = ttk.Scale(self.root, variable=self.y_degrees, length=450,
-                             from_=1, to=-1, orient='vertical',
-                             command=self.y_rotate)
-        y_slider.grid(row=1, rowspan=2, column=5, sticky='NS', **paddings)
-        self.y_rotate()
+        self.y_slider = tk.Scale(self.root, variable=self.y_degrees, width=15, length=300,
+                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=120,
+                                  command=self.y_slider_change)
+        self.y_slider.grid(row=1, column=5, sticky='NS', **paddings)
         
         
-        self.z_degrees_entry = tk.StringVar()
-        z_label = ttk.Entry(self.root, justify='center', textvariable=self.z_degrees_entry)
+        self.z_entry = tk.DoubleVar(value=0.0)
+        z_label = ttk.Entry(self.root, justify='center', textvariable=self.z_entry)
         z_label.grid(row=3, column=6, sticky='SEW', **paddings)
+        z_label.bind('<Return>', self.z_entry_change)
+        
         self.z_degrees = tk.DoubleVar()
-        z_slider = ttk.Scale(self.root, variable=self.z_degrees, length=450,
-                             from_=1, to=-1, orient='vertical',
-                             command=self.z_rotate)
-        z_slider.grid(row=1, rowspan=2, column=6, sticky='NS', **paddings)
-        self.z_rotate()
+        self.z_slider = tk.Scale(self.root, variable=self.z_degrees, width=15, length=300,
+                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=120,
+                                  command=self.z_slider_change)
+        self.z_slider.grid(row=1, column=6, sticky='NS', **paddings)
         
         
         self.shape_file = 'shapes.json'
         self.shape_pts = {}
-        self.render_shape = np.array([[]])
         self.load_shapes()
+        self.render_shape = self.shape_pts[self.shape_choice.get()]
+        
+        self.load_tree_view()
+        
     
-    def x_rotate(self, *args):
-        degrees = self.x_degrees.get() * 360.0
-        self.x_degrees_entry.set(f'{degrees:.2f}')
-        # self.render_shape = x_axis_rotation(self.render_shape, degrees)
+    def x_slider_change(self, *args):
+        self.x_entry.set(self.x_slider.get())
+        self.x_degrees.set(self.x_slider.get())
     
-    def y_rotate(self, *args):
-        degrees = self.y_degrees.get() * 360.0
-        self.y_degrees_entry.set(f'{degrees:.2f}')
-        # self.render_shape = y_axis_rotation(self.render_shape, degrees)
+    def x_entry_change(self, *args):
+        self.x_slider.set(self.x_entry.get())
+        self.x_degrees.set(self.x_entry.get())
     
-    def z_rotate(self, *args):
-        degrees = self.z_degrees.get() * 360.0
-        self.z_degrees_entry.set(f'{degrees:.2f}')
-        # self.render_shape = z_axis_rotation(self.render_shape, degrees)
+    def y_slider_change(self, *args):
+        self.y_entry.set(self.y_slider.get())
+        self.x_degrees.set(self.y_slider.get())
+    
+    def y_entry_change(self, *args):
+        self.y_slider.set(self.y_entry.get())
+        self.x_degrees.set(self.y_entry.get())
+    
+    def z_slider_change(self, *args):
+        self.z_entry.set(self.z_slider.get())
+        self.x_degrees.set(self.z_slider.get())
+    
+    def z_entry_change(self, *args):
+        self.z_slider.set(self.z_entry.get())
+        self.x_degrees.set(self.z_entry.get())
+    
+    def apply_rotation(self, *args):
+        if self.x_degrees.get() != 0:
+            self.render_shape = x_axis_rotation(self.render_shape, self.x_degrees.get())
+        if self.y_degrees.get() != 0:
+            self.render_shape = y_axis_rotation(self.render_shape, self.y_degrees.get())
+        if self.z_degrees.get() != 0:
+            self.render_shape = z_axis_rotation(self.render_shape, self.z_degrees.get())
     
     def render(self, *args):
         self.ax.clear()
         self.ax.set_axis_off()
         self.ax.set_aspect('equal')
         
-        self.render_shape = self.shape_pts[self.shape_choice.get()]
+        assert len(self.render_shape) >= 3
+        self.apply_rotation()
+        self.load_tree_view()
+        
         x = [pt[0] for pt in self.render_shape]
         y = [pt[1] for pt in self.render_shape]
         z = [pt[2] for pt in self.render_shape]
+        s = sizes[:len(self.render_shape)]
+        c = colors[:len(self.render_shape)]
         
-        self.ax.plot(x, y)
+        self.ax.scatter(x, y, s, c)
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.widget = self.canvas.get_tk_widget()
         self.widget.grid(row=0, rowspan=4, column=0, columnspan=4)
         self.canvas.draw()
-        print(self.canvas.get_width_height())
+        
     
     def get_filename(self, full_path):
         i = full_path.rfind('/') + 1
@@ -166,10 +196,23 @@ class IsometricRenderer:
             self.shape_pts = json.load(f)
     
     def load_shape(self, *args):
-        with open(self.shape_file, 'r') as f:
-            file_dict = json.load(f)
-            if len(args) and args[0] in list(file_dict.keys()):
-                self.shape_pts[args[0]] = file_dict[args[0]]
+        self.render_shape = self.shape_pts[self.shape_choice.get()]
+
+    def load_tree_view(self, *args):
+        tree = ttk.Treeview(self.root, columns=('x', 'y', 'z'), show='headings')
+        tree.heading('x', text='X')
+        tree.heading('y', text='Y')
+        tree.heading('z', text='Z')
+        tree.column('x', stretch=True, anchor='center')
+        tree.column('y', stretch=True, anchor='center')
+        tree.column('z', stretch=True, anchor='center')
+        for pt in list(self.shape_pts[self.shape_choice.get()]):
+            item = tree.insert('', 'end')
+            tree.set(item, 'x', f'{pt[0]:.2f}')
+            tree.set(item, 'y', f'{pt[1]:.2f}')
+            tree.set(item, 'z', f'{pt[2]:.2f}')
+        tree.grid(row=4, rowspan=1, column=4, columnspan=3, sticky='NSEW')
+        
     
     def save_shapes(self):
         save_file = filedialog.asksaveasfile(parent=self.root)
