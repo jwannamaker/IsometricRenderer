@@ -72,8 +72,8 @@ class IsometricRenderer:
         self.fig.set_figwidth(3)
         self.ax.set_axis_off()
         self.ax.set_aspect('equal')
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.widget = self.canvas.get_tk_widget()
+        self.plot_canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.widget = self.plot_canvas.get_tk_widget()
         self.widget.grid(row=0, rowspan=4, column=0, columnspan=4)
         
         
@@ -83,94 +83,96 @@ class IsometricRenderer:
                                          command=self.load_shape)
         self.shape_menu.grid(row=0, column=4, columnspan=2, sticky='NEW', **paddings)
         
-        
         render_button = ttk.Button(self.root, text='Render', command=self.render)
         render_button.grid(row=0, column=6, sticky='NEW', **paddings)
         
+        #----------------------------------------------------------------------------------------------------
+        self.x_degrees = tk.DoubleVar(value=0.0)
+        self.x_degrees.trace_add(['write'], self.on_x_change)
         
         self.x_entry = tk.DoubleVar(value=0.0)
         x_label = ttk.Entry(self.root, justify='center', textvariable=self.x_entry)
         x_label.grid(row=3, column=4, sticky='SEW', **paddings)
-        x_label.bind('<Return>', self.x_entry_change)
         
-        self.x_degrees = tk.DoubleVar(value=0.0)
         self.x_slider = tk.Scale(self.root, variable=self.x_degrees, width=15, length=300,
-                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=120,
+                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=360,
                                   command=self.x_slider_change)
         self.x_slider.grid(row=1, column=4, sticky='NS', **paddings)
-        
-        
+        self.x_slider.bind('<KeyPress>', self.x_slider_change, add=True)
+        self.x_slider.bind('<KeyRelease>', self.x_slider_change, add=True)
+        #----------------------------------------------------------------------------------------------------
         self.y_entry = tk.DoubleVar(value=0.0)
         y_label = ttk.Entry(self.root, justify='center', textvariable=self.y_entry)
         y_label.grid(row=3, column=5, sticky='SEW', **paddings)
-        y_label.bind('<Return>', self.y_entry_change)
+        # y_label.bindtags(['angle_change', 'entry', 'y'])
         
         self.y_degrees = tk.DoubleVar()
         self.y_slider = tk.Scale(self.root, variable=self.y_degrees, width=15, length=300,
-                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=120,
+                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=360,
                                   command=self.y_slider_change)
         self.y_slider.grid(row=1, column=5, sticky='NS', **paddings)
-        
-        
+        # self.y_slider.bindtags(['angle_change', 'slider', 'y'])
+        #----------------------------------------------------------------------------------------------------
         self.z_entry = tk.DoubleVar(value=0.0)
         z_label = ttk.Entry(self.root, justify='center', textvariable=self.z_entry)
         z_label.grid(row=3, column=6, sticky='SEW', **paddings)
-        z_label.bind('<Return>', self.z_entry_change)
+        # z_label.bindtags(['angle_change', 'entry', 'z'])
         
         self.z_degrees = tk.DoubleVar()
         self.z_slider = tk.Scale(self.root, variable=self.z_degrees, width=15, length=300,
-                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=120,
+                                  from_=360.0, to=-360.0, orient='vertical', tickinterval=360,
                                   command=self.z_slider_change)
         self.z_slider.grid(row=1, column=6, sticky='NS', **paddings)
         
+        # self.z_slider.bindtags(['angle_change', 'slider', 'z'])
+        #----------------------------------------------------------------------------------------------------
         
         self.shape_file = 'shapes.json'
         self.shape_pts = {}
         self.load_shapes()
         self.render_shape = self.shape_pts[self.shape_choice.get()]
-        
         self.load_tree_view()
         
+    def on_x_change(self, *args):
+        print(f'on_x_change: {args}')    
+        self.render_shape = x_axis_rotation(self.render_shape, self.x_degrees.get())
     
     def x_slider_change(self, *args):
-        self.x_entry.set(self.x_slider.get())
-        self.x_degrees.set(self.x_slider.get())
+        print(f'x slider changed to {args[0]}')
+        self.x_degrees.set(args[0])
     
     def x_entry_change(self, *args):
         self.x_slider.set(self.x_entry.get())
         self.x_degrees.set(self.x_entry.get())
+        self.render_shape = x_axis_rotation(self.render_shape, self.x_degrees.get())
     
     def y_slider_change(self, *args):
         self.y_entry.set(self.y_slider.get())
         self.x_degrees.set(self.y_slider.get())
+        self.render_shape = y_axis_rotation(self.render_shape, self.y_degrees.get())
     
     def y_entry_change(self, *args):
         self.y_slider.set(self.y_entry.get())
         self.x_degrees.set(self.y_entry.get())
+        self.render_shape = y_axis_rotation(self.render_shape, self.y_degrees.get())
     
     def z_slider_change(self, *args):
         self.z_entry.set(self.z_slider.get())
         self.x_degrees.set(self.z_slider.get())
+        self.render_shape = z_axis_rotation(self.render_shape, self.z_degrees.get())
     
     def z_entry_change(self, *args):
         self.z_slider.set(self.z_entry.get())
         self.x_degrees.set(self.z_entry.get())
-    
-    def apply_rotation(self, *args):
-        if self.x_degrees.get() != 0:
-            self.render_shape = x_axis_rotation(self.render_shape, self.x_degrees.get())
-        if self.y_degrees.get() != 0:
-            self.render_shape = y_axis_rotation(self.render_shape, self.y_degrees.get())
-        if self.z_degrees.get() != 0:
-            self.render_shape = z_axis_rotation(self.render_shape, self.z_degrees.get())
-    
+        self.render_shape = z_axis_rotation(self.render_shape, self.z_degrees.get())
+        
     def render(self, *args):
+        print(f'render({args})')
         self.ax.clear()
         self.ax.set_axis_off()
         self.ax.set_aspect('equal')
         
         assert len(self.render_shape) >= 3
-        self.apply_rotation()
         self.load_tree_view()
         
         x = [pt[0] for pt in self.render_shape]
@@ -181,10 +183,10 @@ class IsometricRenderer:
         
         self.ax.scatter(x, y, s, c)
         
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.widget = self.canvas.get_tk_widget()
+        self.plot_canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.widget = self.plot_canvas.get_tk_widget()
         self.widget.grid(row=0, rowspan=4, column=0, columnspan=4)
-        self.canvas.draw()
+        self.plot_canvas.draw()
         
     
     def get_filename(self, full_path):
@@ -196,9 +198,14 @@ class IsometricRenderer:
             self.shape_pts = json.load(f)
     
     def load_shape(self, *args):
+        print(f'load_shape({args})')
         self.render_shape = self.shape_pts[self.shape_choice.get()]
+        self.x_slider.set(0)
+        self.y_slider.set(0)
+        self.z_slider.set(0)
 
     def load_tree_view(self, *args):
+        print(f'load_tree_view({args})')
         tree = ttk.Treeview(self.root, columns=('x', 'y', 'z'), show='headings')
         tree.heading('x', text='X')
         tree.heading('y', text='Y')
