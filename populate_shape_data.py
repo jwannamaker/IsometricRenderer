@@ -1,4 +1,5 @@
 import json
+import pandas as pd
 
 import numpy as np
 from numpy import sqrt, sin, cos
@@ -60,5 +61,10 @@ shapes = {
 if __name__ == '__main__':
     
     
-    with open('shapes.json', 'w') as f:
-        json.dump(shapes, f, indent=4)
+    for shape in shapes:
+        # with open(f'{shape.lower()}.json', 'w') as f:
+        #     json.dump(shapes[shape], f)
+    
+        dataframe = pd.read_json(f'{shape.lower()}.json')
+        print(dataframe.info(True))
+        dataframe.to_csv(f'{shape.lower()}.csv')
